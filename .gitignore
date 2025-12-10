@@ -361,3 +361,18 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Additions to work with Rider on MacOS as well: 
+# macOS 
+*.DS_Store
+.AppleDouble
+.LSOverride
+__MACOSX/
+
+# Rider 
+.idea/
+.idea_modules/
+*.iml 
+out/ 
+.jetbrains/
+
