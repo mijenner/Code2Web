@@ -1,15 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RUNTIME="${1:-osx-arm64}"  # standard: Apple Silicon
+RUNTIME="${1:-osx-arm64}"
 CONFIG="${2:-Release}"
 
-# Find projektfilen ud fra scriptets placering
+# Mappen hvor scriptet ligger (repo-roden)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_PATH="$SCRIPT_DIR/Code2Web/Code2Web.csproj"
 
-DEST_ROOT="$HOME/cli"
-DEST="$DEST_ROOT/Code2Web-$RUNTIME"
+# Find .csproj (helst cliCode2Web.csproj, ellers første .csproj)
+PROJECT_PATH="$(find "$SCRIPT_DIR" -name 'cliCode2Web.csproj' -print -quit)"
+
+if [ -z "$PROJECT_PATH" ]; then
+  PROJECT_PATH="$(find "$SCRIPT_DIR" -name '*.csproj' -print -quit)"
+  if [ -z "$PROJECT_PATH" ]; then
+    echo " Fandt ingen .csproj-filer under $SCRIPT_DIR"
+    exit 1
+  else
+    echo " Flere .csproj fundet - bruger: $PROJECT_PATH"
+  fi
+fi
+
+# Output-mappe: /Users/<user>/cli
+DEST="$HOME/cli"
 
 echo "Project      : $PROJECT_PATH"
 echo "Runtime      : $RUNTIME"
@@ -23,7 +35,7 @@ dotnet publish "$PROJECT_PATH" \
     -c "$CONFIG" \
     -r "$RUNTIME" \
     -p:PublishSingleFile=true \
-    --self-contained false \
+    --self-contained true \
     -o "$DEST"
 
 echo

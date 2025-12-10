@@ -5,13 +5,27 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Find projektfilen ud fra scriptets placering
+# Mappen hvor scriptet ligger (repo-roden)
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectPath = Join-Path $ScriptDir "Code2Web/Code2Web.csproj"
 
-# Output-mappe, fx C:\Users\mje\cli\Code2Web-win-x64
-$DestRoot = Join-Path $env:USERPROFILE "cli"
-$Dest = Join-Path $DestRoot "Code2Web-$Runtime"
+# Find .csproj (helst cliCode2Web.csproj, ellers første .csproj)
+$projectFiles = Get-ChildItem -Path $ScriptDir -Filter *.csproj -Recurse
+
+if ($projectFiles.Count -eq 0) {
+    Write-Error " Fandt ingen .csproj-filer under $ScriptDir"
+    exit 1
+}
+
+$project = $projectFiles | Where-Object { $_.Name -eq 'cliCode2Web.csproj' } | Select-Object -First 1
+if (-not $project) {
+    $project = $projectFiles | Select-Object -First 1
+    Write-Host " Flere .csproj fundet - bruger: $($project.FullName)"
+}
+
+$ProjectPath = $project.FullName
+
+# Output-mappe: C:\Users\<user>\cli
+$Dest = Join-Path $env:USERPROFILE "cli"
 
 Write-Host "Project      : $ProjectPath"
 Write-Host "Runtime      : $Runtime"
@@ -25,9 +39,14 @@ dotnet publish $ProjectPath `
     -c $Configuration `
     -r $Runtime `
     -p:PublishSingleFile=true `
-    --self-contained false `
+    --self-contained true `
     -o $Dest
 
+if ($LASTEXITCODE -ne 0) {
+    Write-Error " dotnet publish failed with exit code $LASTEXITCODE"
+    exit $LASTEXITCODE
+}
+
 Write-Host ""
-Write-Host "   Publish complete."
-Write-Host "   Files are in: $Dest"
+Write-Host "  Publish complete."
+Write-Host "  Files are in: $Dest"

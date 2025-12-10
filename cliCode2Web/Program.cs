@@ -235,7 +235,6 @@ internal class Program
             h.AddPreOptionsLine("Standard dybde      : 5");
             h.AddPreOptionsLine("Standard eksklusion : obj/, bin/, .idea/, .vs/, __MACOSX/, .json");
             h.AddPreOptionsLine("Tænd med            : --include-obj, --include-bin, --include-idea, --include-vs, --include-json");
-            h.AddPreOptionsLine("");
             return HelpText.DefaultParsingErrorsHandler(result, h);
         }, e => e);
 
@@ -409,5 +408,4 @@ internal class Program
             .Replace("<script", "&lt;script", StringComparison.OrdinalIgnoreCase)
             .Replace("</script", "&lt;/script", StringComparison.OrdinalIgnoreCase);
     }
-}
 }
