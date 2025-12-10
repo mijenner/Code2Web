@@ -3,7 +3,7 @@
 **Code2Web** er et lille CLI-værktøj, der, fra et aktuelt bibliotek, gennemgår undermapper og genererer en samlet HTML-visning af kode i disse mapper.
 Formålet er at lette processen med at: 
 
-- få kode lagt i bilag, der kan printes fra HTML til f.eks. pdf.
+- få kode lagt i bilag. Det kan gøres ved at printe fra HTML og til pdf. pdf filen kan derefter lægges i forlængelse af projektet.
 - hurtigt at browse **alle kode-filer** fra en solution. 
 - kildekoden vises med **syntax highlighting**
 
