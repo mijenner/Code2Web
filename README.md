@@ -1,13 +1,11 @@
 # Code2Web
 
-**Code2Web** er et lille, hurtigt CLI-værktøj, der gennemgår elevers projektmapper og genererer en samlet HTML-visning af al deres kode.
-Det gør det let for lærere, censorer og elever selv at:
+**Code2Web** er et lille CLI-værktøj, der, fra et aktuelt bibliotek, gennemgår undermapper og genererer en samlet HTML-visning af kode i disse mapper.
+Formålet er at lette processen med at: 
 
-- få **hurtigt overblik** over et helt projekt
-- browse **alle filer i én HTML-side pr. elev**
-- se kildekode med **syntax highlighting**
-- undgå at åbne løsrevne filer i IDE’en
-- evaluere/bedømme projekter langt mere effektivt
+- få kode lagt i bilag, der kan printes fra HTML til f.eks. pdf.
+- hurtigt at browse **alle kode-filer** fra en solution. 
+- kildekoden vises med **syntax highlighting**
 
 Værktøjet fungerer på både **Windows** og **macOS** (Intel + Apple Silicon).
 
@@ -15,31 +13,30 @@ Værktøjet fungerer på både **Windows** og **macOS** (Intel + Apple Silicon).
 
 ## ✨ Features
 
-- Gennemgår en *input-mappe* (typisk en afleveringsmappe)
+- Gennemgår en *input-mappe* (hvis du ikke angiver andet, så den mappe du "står i" (command prompt eller terminal))
 - Finder relevante kodefiler (C#, Java, Python, XML, JSON, HTML m.fl.)
-- Normaliserer HTML så `<script>` ikke eksekveres
-- Laver én HTML-side pr. elev (folder)
-- Laver en samlet *index.html* med links til alle grupper
+- Laver én HTML-side pr. underfolder. 
+- Laver en samlet *index.html* med links til alle underfolderes HTML filer. 
 - Syntax highlighting via Highlight.js
 - Fold alle / luk alle-knapper for store filer
-- Styrbar rekursionsdybde (default: **5**)
-- Kan ekskludere tekniske foldere (`obj/`, `.idea/`, `.vs/`, `bin/`, `__MACOSX/`)
+- Styrbar folder-udtrækningsdybde (default: **5**)
+- Ekskluderer per default ikke "tekniske" foldere (`obj/`, `.idea/`, `.vs/`, `bin/`, `__MACOSX/`)
 - Mulighed for at inkludere dem med CLI-flags (`--include-obj`, `--include-idea`, `--include-vs`, `--include-bin`, `--include-json`)
 
 ---
 
 # 🚀 Installation
 
-Du skal **ikke** clone repoet for at bruge værktøjet.
+Det er **ikke** nødvendigt at clone repoet for at bruge værktøjet.
 
 Gå til:
 
-👉 **Releases → Latest**  
+**Releases → Latest**  
 https://github.com/<dit-brugernavn>/Code2Web/releases/latest
 
 Her finder du zip-filer til:
 
-- **Windows (x64)**
+- **Windows**
 - **macOS ARM (M1/M2/M3)**
 - **macOS Intel (x64)**
 
@@ -54,20 +51,16 @@ Download den zip-fil, der passer til din maskine, og pak den ud.
 3. Læg `cliCode2Web.exe` i en mappe, fx:
 
 ```
-C:\Users\<dig>\cli\
+C:\Users\<dig>\MinSolutionFolder\
 ```
 
-4. (Valgfrit) Tilføj mappen til PATH:
-
-```
-setx PATH "%PATH%;C:\Users\<dig>\cli"
-```
-
-5. Kør værktøjet:
+4. Kør værktøjet:
 
 ```powershell
 cliCode2Web --help
 ```
+
+Og se at det virker. 
 
 ---
 
@@ -84,19 +77,13 @@ cliCode2Web --help
 chmod +x cliCode2Web
 ```
 
-4. Flyt den til en folder, fx:
+4. Flyt den til en folder, f.eks.:
 
 ```
-~/cli/
+/Users/<ditbrugernavn>/source/repos/<dinSolutionFolder> 
 ```
 
-5. (Valgfrit) Tilføj til din PATH i `.zshrc`:
-
-```bash
-export PATH="$HOME/cli:$PATH"
-```
-
-6. Test:
+5. Test:
 
 ```bash
 cliCode2Web --help
@@ -106,7 +93,7 @@ cliCode2Web --help
 
 # 🧭 Brug
 
-Gå ind i mappen med elevafleveringer:
+Gå ind i mappen et niveau over hvor din solution er (se efter .sln fil, og gå så et niveau op):
 
 ```
 cd "C:\Users\mje\Downloads\hold\2k25"
@@ -114,8 +101,16 @@ cd "C:\Users\mje\Downloads\hold\2k25"
 
 Kør derefter:
 
+På Windows og Apple-mac: 
+
 ```bash
 cliCode2Web --class 2k25
+```
+
+På Intel-mac: 
+
+```bash
+cliCode2Web-x64 --class 2k25
 ```
 
 Dette genererer:
@@ -123,9 +118,9 @@ Dette genererer:
 ```
 ~/Documents/Code2Web/2k25/
     index.html
-    elevA.html
-    elevB.html
-    elevC.html
+    solutionA.html
+    solutionB.html
+    solutionC.html
     ...
 ```
 
@@ -181,7 +176,7 @@ dotnet build
 
 ## Publish (Windows)
 ```
-publish-win.ps1
+powershell -ExecutionPolicy Bypass -File .\publish-win.ps1
 ```
 
 ## Publish (macOS ARM)
@@ -194,18 +189,9 @@ publish-win.ps1
 ./publish-mac-intel.sh
 ```
 
-## Cross-platform
-Rider og .NET kan kryds-kompilere på tværs af OS og CPU-arkitekturer.
-
----
-
-# 📦 Contributing
-
-Pull requests er velkomne — både forbedringer af HTML-layoutet, flere filtyper, og performance-optimeringer.
 
 ---
 
 # 📜 License
 
 MIT License
-
