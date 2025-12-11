@@ -59,9 +59,9 @@ https://github.com/mijenner/Code2Web/releases/latest
 
 Her finder du zip-filer til:
 
-- **Windows**
-- **macOS ARM (M1/M2/M3)**
-- **macOS Intel (x64)**
+- cliCode2Web.zip - **Windows**
+- cliCode2Web-mac.zip - **macOS ARM (M1/M2/M3)**
+- cliCode2Web-mac-intel.zip - **macOS Intel (x64)**
 
 Download den zip-fil, der passer til din maskine, og pak den ud.
 
@@ -69,47 +69,60 @@ Download den zip-fil, der passer til din maskine, og pak den ud.
 
 ## 🪟 Windows installation
 
-1. Download `Code2Web-win-x64.zip`
+1. Download `cliCode2Web.zip`
 2. Udpak filen
 3. Læg `cliCode2Web.exe` i en mappe, fx:
 
 ```
-C:\Users\<dig>\MinSolutionFolder\
+C:\Users\<ditbrugernavn>\source\repos\MinSolutionFolder\
 ```
 
-4. Kør værktøjet:
+4. Åben kommandoprompt og gå til folderen:
+
+VS2022 -> Tools -> Commandline -> Developer command prompt. 
+
+```powershell
+cd .. 
+```
+
+5. Kør værktøjet:
 
 ```powershell
 cliCode2Web --help
+cliCode2Web --class=holdnavn 
 ```
 
-Og se at det virker. 
+Og se at det virker ved at åbne den genererede index.html, som per default er i `C:\Users\ditbrugernavn\Documents\Code2Web\holdnavn`
 
 ---
 
 ## 🍏 macOS installation
 
 1. Download enten:
-   - `Code2Web-macos-arm64.zip` (Apple Silicon)
-   - `Code2Web-macos-x64.zip` (Intel)
+   - `cliCode2Web-mac.zip` (Apple Silicon)
+   - `cliCode2Web-mac-x64.zip` (Intel)
 
 2. Udpak zip-filen
-3. Gør filen eksekverbar (bevares normalt af zip, men for en sikkerheds skyld):
 
-```bash
-chmod +x cliCode2Web
-```
-
-4. Flyt den til en folder, f.eks.:
+3. Flyt indholdet af zip filen, dvs. filen der hedder noget med cliCode2Web, til en folder, f.eks. til:
 
 ```
 /Users/<ditbrugernavn>/source/repos/<dinSolutionFolder> 
 ```
 
-5. Test:
+3. Gør filen eksekverbar (bevares normalt af zip, men for en sikkerheds skyld) - fra terminalen:
+
+```bash
+cd /Users/<ditbrugernavn>/source/repos/<dinSolutionFolder> 
+chmod +x cliCode2Web
+```
+
+
+5. Afprøv programmet - fra terminalen:
 
 ```bash
 cliCode2Web --help
+cliCode2Web
 ```
 
 ---
