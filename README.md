@@ -12,7 +12,7 @@ Værktøjet fungerer på både **Windows** og **macOS** (Intel + Apple Silicon).
 
 ---
 ## ✨ Hurtig kom-i-gang - fælles  
-- Download binær der passer til dit system fra https://github.com/mijenner/Code2Web/releases/latest (ctrl+klik på win, cmd+click på mac)
+- Download binær der passer til dit system fra https://github.com/mijenner/Code2Web/releases/latest (åben i nyt vindue med: ctrl+klik på win, cmd+click på mac)
 - Pak zip filen ud.
 - Kopier indholdet, dvs. den binære fil, aka programmet, til en folder, et niveau over din solution folder (der hvor .sln filen er, en op). 
 
