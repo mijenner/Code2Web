@@ -30,6 +30,7 @@ Værktøjet fungerer på både **Windows** og **macOS** (Intel + Apple Silicon).
 - Skift aktuelt bibliotek til et niveau op, over .sln filen, med `cd ..` 
 - Kør programmet med tilføjelse af holdnavn: `cliCode2Web --class=holdnavn`
 - Programmet gennemløber nu underfolderne for kode, og gemmer resultatet, per default i `/Users/ditbrugernavn/Documents/Code2Web/holdnavn`
+- Gå til denne folder i Finder, og dobbeltklik på index.html for at åbne den i browser. 
 
 ---
 
