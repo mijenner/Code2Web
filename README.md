@@ -10,6 +10,36 @@ Formålet er at lette processen med at:
 
 Værktøjet fungerer på både **Windows** og **macOS** (Intel + Apple Silicon).
 
+## Kort fortalt 
+### Input folderstruktur: 
+C:\Users\mje\source\repos\hold5\
+│
+├─ solutionA\
+│    ├─ Program.cs
+│    ├─ Game.cs
+│    └─ Utils\
+│         └─ MathHelpers.cs
+│
+├─ solutionB\
+│    ├─ main.py
+│    └─ helpers.py
+│
+└─ solutionC\
+     ├─ index.html
+     └─ script.js
+
+### Kørsel 
+cliCode2Web --class hold5
+
+### Resultat 
+C:\Users\mje\Documents\Code2Web\hold5\
+│
+├─ index.html          ← Oversigtsside med links til alle grupper
+│
+├─ solutionA.html      ← Indeholder al kode fra solutionA
+├─ solutionB.html
+└─ solutionC.html
+
 ---
 ## ✨ Hurtig kom-i-gang - fælles  
 - Download binær der passer til dit system fra https://github.com/mijenner/Code2Web/releases/latest (åben i nyt vindue med: ctrl+klik på win, cmd+click på mac)
