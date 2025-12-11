@@ -11,10 +11,31 @@ Formålet er at lette processen med at:
 Værktøjet fungerer på både **Windows** og **macOS** (Intel + Apple Silicon).
 
 ---
+## ✨ Hurtig kom-i-gang - fælles  
+- Download binær der passer til dit system fra https://github.com/mijenner/Code2Web/releases/latest 
+- Pak zip filen ud.
+- Kopier indholdet, dvs. den binære fil, aka programmet, til en folder, et niveau over din solution folder (der hvor .sln filen er, en op). 
+
+## ✨ Hurtig kom-i-gang - Windows 
+- I VS 2022 vælges -> Tools -> Command line -> Developoer Command Prompt
+- Se hvad der er i folderen med `dir`, er der .sln fil er du på rette sted. 
+- Skift aktuelt bibliotek til et niveau op med `cd ..`  
+- Kør programmet med tilføjelse af holdnavn: `cliCode2Web --class=holdnavn`
+- Programmet gennemløber nu underfolderne for kode, og gemmer resultatet, per default i `C:\Users\ditbrugernavn\Documents\Code2Web\holdnavn`
+- Gå til denne folder i File Explorer, og dobbeltklik på index.html for at åbne den i browser. 
+
+## ✨ Hurtig kom-i-gang - macOS 
+- I Jetbrains Rider vælges højreklik på solution -> Tools -> Open in Terminal
+- Se hvad der er i folderen med `ls -al`, er der .sln fil er du på rette sted. 
+- Skift aktuelt bibliotek til et niveau op, over .sln filen, med `cd ..` 
+- Kør programmet med tilføjelse af holdnavn: `cliCode2Web --class=holdnavn`
+- Programmet gennemløber nu underfolderne for kode, og gemmer resultatet, per default i `/Users/ditbrugernavn/Documents/Code2Web/holdnavn`
+
+---
 
 ## ✨ Features
 
-- Gennemgår en *input-mappe* (hvis du ikke angiver andet, så den mappe du "står i" (command prompt eller terminal))
+- Programmet Gennemgår en *input-mappe* (hvis du ikke angiver andet, så den mappe du "står i" (command prompt eller terminal))
 - Finder relevante kodefiler (C#, Java, Python, XML, JSON, HTML m.fl.)
 - Laver én HTML-side pr. underfolder. 
 - Laver en samlet *index.html* med links til alle underfolderes HTML filer. 
@@ -33,7 +54,7 @@ Det er **ikke** nødvendigt at clone repoet for at bruge værktøjet.
 Gå til:
 
 **Releases → Latest**  
-https://github.com/<dit-brugernavn>/Code2Web/releases/latest
+https://github.com/mijenner/Code2Web/releases/latest
 
 Her finder du zip-filer til:
 
