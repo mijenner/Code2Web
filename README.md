@@ -12,6 +12,7 @@ Værktøjet fungerer på både **Windows** og **macOS** (Intel + Apple Silicon).
 
 ## Kort fortalt 
 ### Input folderstruktur: 
+```text
 C:\Users\mje\source\repos\hold5\
 │
 ├─ solutionA\
@@ -27,11 +28,16 @@ C:\Users\mje\source\repos\hold5\
 └─ solutionC\
      ├─ index.html
      └─ script.js
+```
 
 ### Kørsel 
+```powershell
 cliCode2Web --class hold5
+```
 
 ### Resultat 
+Resultatet bliver. 
+```text 
 C:\Users\mje\Documents\Code2Web\hold5\
 │
 ├─ index.html          ← Oversigtsside med links til alle grupper
@@ -39,6 +45,7 @@ C:\Users\mje\Documents\Code2Web\hold5\
 ├─ solutionA.html      ← Indeholder al kode fra solutionA
 ├─ solutionB.html
 └─ solutionC.html
+```
 
 ---
 ## ✨ Hurtig kom-i-gang - fælles  
