@@ -35,13 +35,16 @@ Værktøjet fungerer på både **Windows** og **macOS** (Intel + Apple Silicon).
 
 ## ✨ Features
 
-- Programmet Gennemgår en *input-mappe* (hvis du ikke angiver andet, så den mappe du "står i" (command prompt eller terminal))
-- Finder relevante kodefiler (C#, Java, Python, XML, JSON, HTML m.fl.)
-- Laver én HTML-side pr. underfolder. 
-- Laver en samlet *index.html* med links til alle underfolderes HTML filer. 
+- Programmet gennemgår en *input-mappe* (default: den mappe du "står i" — kan overstyres med `--directory`)
+- Finder relevante kodefiler og **genkender automatisk projekttype**: C#/.NET (console, Avalonia, MAUI, Blazor/ASP.NET), Unity, Node.js, Next.js og Arduino
+- Understøtter bl.a. C#, Razor (`.razor`/`.cshtml`), Java, Python, Arduino, XML/XAML/AXAML, HTML, samt TypeScript/JavaScript-frameworks (React, Vue, Svelte, Astro)
+- Laver én HTML-side pr. underfolder
+- Laver en samlet *index.html* med links til alle underfolderes HTML filer
 - Syntax highlighting via Highlight.js
 - Fold alle / luk alle-knapper for store filer
 - Styrbar folder-udtrækningsdybde (default: **5**)
+- **Magre, gennemtænkte defaults** — C#/.NET og Unity er code-first ud af boksen, så HTML-dokumenterne ikke bliver "busy"
+- Per-projekt finjustering via en valgfri `code2web.json` markerfil (se nedenfor)
 - Ekskluderer per default ikke "tekniske" foldere (`obj/`, `.idea/`, `.vs/`, `bin/`, `__MACOSX/`)
 - Mulighed for at inkludere dem med CLI-flags (`--include-obj`, `--include-idea`, `--include-vs`, `--include-bin`, `--include-json`)
 
@@ -148,6 +151,8 @@ Dette genererer:
 
 Åbn `index.html` i en browser.
 
+Input er som standard den **mappe du står i**. Vil du pege på en anden mappe uden at skifte aktuelt bibliotek, kan du bruge `--directory <sti>`.
+
 ---
 
 # ⚙️ Options
@@ -158,18 +163,26 @@ Kør:
 cliCode2Web --help
 ```
 
-Typiske options:
+Fuld liste over options:
 
-```
---class <navn>           Sæt holdnavn (bruges til output-folder)
---depth <n>              Rekursionsdybde ved søgning efter filer (default: 5)
---include-obj            Medtag obj-mapper
---include-bin            Medtag bin-mapper
---include-idea           Medtag .idea-mapper (Rider)
---include-vs             Medtag .vs-mapper (Visual Studio)
---include-json           Medtag .json-filer som ellers filtreres
---output <folder>        Overstyr default output-folder
-```
+| Option | Kort | Default | Betydning |
+|--------|------|---------|-----------|
+| `--class <navn>` | `-c` | *(påkrævet)* | Holdnavn — bruges i standard output-sti |
+| `--directory <sti>` | `-d` | nuværende mappe | Rodmappe med elevmapper |
+| `--output <folder>` | `-o` | `<Documents>\Code2Web\<class>` | Overstyr default output-folder |
+| `--depth <n>` | `-r` | `5` | Rekursionsdybde ved fil-scan i elevmapper |
+| `--marker-file <navn>` | | `code2web.json` | Navn på markerfil (se nedenfor) |
+| `--marker-depth <n>` | | `2` | Hvor dybt der søges efter markerfil i elevmappen |
+| `--profile <type>` | | `auto` | Tving profil for alle grupper: `auto\|unity\|node\|next\|csharp\|arduino\|generic` |
+| `--include-obj` | | `false` | Medtag `obj/`-mapper |
+| `--include-bin` | | `false` | Medtag `bin/`-mapper |
+| `--include-idea` | | `false` | Medtag `.idea/`-mapper (Rider) |
+| `--include-vs` | | `false` | Medtag `.vs/`-mapper (Visual Studio) |
+| `--include-json` | | `false` | Medtag `.json`-filer som ellers filtreres |
+| `--unity-include-yaml` | | `false` | Unity: medtag YAML-assetfiler (`.unity`/`.prefab`/`.asset`/`.mat`/`.controller`/`.anim`) |
+| `--unity-include-meta` | | `false` | Unity: medtag `.meta`-filer (GUID mapping) |
+| `--unity-include-vendor` | | `false` | Unity: medtag vendor-foldere under Assets (TextMesh Pro, Plugins, Standard Assets) |
+| `--quiet` | `-q` | `false` | Kør uden ekstra statuslinjer |
 
 Default-output er:
 
@@ -178,7 +191,68 @@ Windows: C:\Users\<dig>\Documents\Code2Web\<class>\
 macOS:   /Users/<dig>/Documents/Code2Web/<class>/
 ```
 
-Input er altid den **mappe du står i**.
+**Bemærk om JSON:** `.json`-filer filtreres som standard fra, så HTML-dokumenterne ikke bliver "busy". Undtagelsen er Node/Next-profilerne, hvor JSON er inkluderet som default (konfigurationsfiler hører naturligt til der).
+
+**Bemærk om Unity:** Unity-profilen er code-first som default — kun scripts, shaders, asmdef og UI-filer. YAML-assets og vendor-foldere er slået fra som default og kan tændes med de tre `--unity-*`-flag.
+
+---
+
+# 🎯 Per-projekt finjustering med `code2web.json`
+
+De fleste projekter kræver **ingen** opsætning — C#/.NET, Unity, Node og Next genkendes automatisk med magre, fornuftige defaults.
+
+Men i en enkelt elevmappe kan du lægge en fil ved navn `code2web.json` (søges som standard ned til 2 niveauer) for at styre netop dét projekt. Det er nyttigt til usædvanlige projekter, hvor du vil have lidt ekstra med — eller skære lidt fra.
+
+Felter i `code2web.json`:
+
+| Felt   | Betydning |
+|--------|-----------|
+| `schema` | Skemaversion (sæt `1`) |
+| `type` | Tving projekttype: `auto`, `unity`, `node`, `next`, `csharp`, `arduino`, `generic` |
+| `name` | Vist navn for projektet i HTML-outputtet |
+| `tune` | Finjusterings-objekt — gælder **alle** typer |
+
+`tune` kan indeholde:
+
+| Felt               | Betydning |
+|--------------------|-----------|
+| `addExtensions`    | Ekstra filendelser ud over profilens standard (fx `".json"`, `".sql"`) |
+| `removeExtensions` | Fjern filendelser fra profilens standard (trim støj) |
+| `excludeFolders`   | Ekstra mapper der udelades |
+| `includeFolders`   | Vis kun disse undermapper (relativt til projektroden) |
+
+Markerfilen selv vises aldrig i outputtet.
+
+### Eksempler
+
+**Navngiv et projekt pænt:**
+```json
+{ "schema": 1, "type": "csharp", "name": "Eksamensprojekt – Gruppe 4" }
+```
+
+**Usædvanligt C#-projekt der skal have ekstra filer med:**
+```json
+{
+  "schema": 1,
+  "type": "csharp",
+  "tune": {
+    "addExtensions": [".json", ".sql"],
+    "excludeFolders": ["TestData", "Migrations"]
+  }
+}
+```
+
+**Trim et "busy" web-projekt ned til det væsentlige:**
+```json
+{
+  "schema": 1,
+  "type": "node",
+  "tune": {
+    "removeExtensions": [".css", ".md"],
+    "includeFolders": ["src"]
+  }
+}
+```
 
 ---
 

@@ -19,7 +19,7 @@
     <!-- Første gang: -->
     <!--   chmod +x publish-mac.sh -->
 
-    <SelfContained>false</SelfContained>
+    <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
     <ExcludeFilesFromSingleFile>*.pdb</ExcludeFilesFromSingleFile>
   </PropertyGroup>
