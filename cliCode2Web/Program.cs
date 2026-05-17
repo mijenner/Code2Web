@@ -321,6 +321,7 @@ internal class Program
     // -----------------------------
     private static List<ProjectSpec> FindProjectsInGroup(string groupDir, Options options, ProjectType forcedType)
     {
+        // --profile tvinger én type for hele gruppemappen.
         if (forcedType != ProjectType.Auto)
         {
             return new List<ProjectSpec>
@@ -334,40 +335,167 @@ internal class Program
             };
         }
 
-        var markers = FindMarkerFiles(groupDir, options.MarkerFileName, options.MarkerSearchDepth);
+        // 1) Auto-find ALLE projektrødder i gruppen (håndterer blandede / fuld-stack mapper:
+        //    fx en C#-backend og en web-frontend som søskende).
+        var discovered = DiscoverProjectRoots(groupDir, options);
 
-        if (markers.Count > 0)
+        // 2) Find markerfiler. En marker på en fundet rod overstyrer type/navn;
+        //    en marker et andet sted bliver sit eget projekt.
+        var markerByRoot = new Dictionary<string, MarkerFile?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var markerPath in FindMarkerFiles(groupDir, options.MarkerFileName, options.MarkerSearchDepth))
         {
-            var specs = new List<ProjectSpec>();
-            foreach (var markerPath in markers)
-            {
-                var projectRoot = Path.GetDirectoryName(markerPath)!;
-                var marker = TryReadMarker(markerPath);
-
-                var type = marker is null ? ProjectType.Auto : ParseProjectType(marker.Type);
-                if (type == ProjectType.Auto)
-                    type = AutoDetectProjectType(projectRoot);
-
-                var name = marker?.Name;
-                if (string.IsNullOrWhiteSpace(name))
-                    name = Path.GetFileName(projectRoot);
-
-                specs.Add(new ProjectSpec(projectRoot, name!, type, marker));
-            }
-
-            return specs
-                .GroupBy(s => Path.GetFullPath(s.ProjectRoot), StringComparer.OrdinalIgnoreCase)
-                .Select(g => g.First())
-                .OrderBy(s => s.ProjectName, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var dir = Path.GetFullPath(Path.GetDirectoryName(markerPath)!);
+            markerByRoot[dir] = TryReadMarker(markerPath);
         }
 
-        var detected = AutoDetectProjectType(groupDir);
-        return new List<ProjectSpec>
+        var specs = new List<ProjectSpec>();
+
+        // 2a) Fundne rødder (evt. justeret af en marker i samme mappe).
+        foreach (var (root, type) in discovered)
         {
-            new ProjectSpec(groupDir, Path.GetFileName(groupDir), detected, null)
-        };
+            var full = Path.GetFullPath(root);
+            markerByRoot.TryGetValue(full, out var marker);
+
+            var resolvedType = type;
+            string? name = null;
+
+            if (marker is not null)
+            {
+                var markerType = ParseProjectType(marker.Type);
+                if (markerType != ProjectType.Auto)
+                    resolvedType = markerType;
+                name = marker.Name;
+            }
+
+            if (string.IsNullOrWhiteSpace(name))
+                name = Path.GetFileName(root);
+
+            specs.Add(new ProjectSpec(root, name!, resolvedType, marker));
+        }
+
+        // 2b) Markerfiler der IKKE sidder på en fundet rod -> bliver deres eget projekt.
+        foreach (var (rootFull, marker) in markerByRoot)
+        {
+            if (specs.Any(s => Path.GetFullPath(s.ProjectRoot).Equals(rootFull, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            var type = marker is null ? ProjectType.Auto : ParseProjectType(marker.Type);
+            if (type == ProjectType.Auto)
+                type = AutoDetectProjectType(rootFull);
+
+            var name = marker?.Name;
+            if (string.IsNullOrWhiteSpace(name))
+                name = Path.GetFileName(rootFull);
+
+            specs.Add(new ProjectSpec(rootFull, name!, type, marker));
+        }
+
+        specs = specs
+            .GroupBy(s => Path.GetFullPath(s.ProjectRoot), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .OrderBy(s => s.ProjectName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // 3) Fandt vi intet (fx en mappe med løse .py-filer)? Behandl hele gruppen som ét projekt.
+        if (specs.Count == 0)
+        {
+            var detected = AutoDetectProjectType(groupDir);
+            specs.Add(new ProjectSpec(groupDir, Path.GetFileName(groupDir), detected, null));
+        }
+
+        return specs;
     }
+
+    // -----------------------------
+    //  Multi-project auto-discovery
+    // -----------------------------
+    // Mapper der aldrig skal gennemsøges når vi leder efter projektrødder.
+    private static readonly HashSet<string> DiscoveryExcludedFolders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "node_modules", "obj", "bin", "out", "dist",
+        ".git", ".vs", ".idea", ".next", ".turbo", ".cache", ".vercel",
+        "Library", "Temp", "Logs", "Build", "UserSettings",
+        "__MACOSX"
+    };
+
+    private static List<(string Root, ProjectType Type)> DiscoverProjectRoots(string groupDir, Options options)
+    {
+        var found = new List<(string Root, ProjectType Type)>();
+        int maxDepth = Math.Max(options.MarkerSearchDepth, 3);
+        DiscoverProjectRootsInternal(groupDir, 0, maxDepth, found);
+        return CollapseProjectRoots(found);
+    }
+
+    private static void DiscoverProjectRootsInternal(
+        string dir, int depth, int maxDepth, List<(string, ProjectType)> found)
+    {
+        var name = Path.GetFileName(dir);
+        if (DiscoveryExcludedFolders.Contains(name)) return;
+
+        // Unity-projekt: selvstændigt -> registrér og stop her.
+        if (Directory.Exists(Path.Combine(dir, "Assets")) &&
+            Directory.Exists(Path.Combine(dir, "ProjectSettings")))
+        {
+            found.Add((dir, ProjectType.Unity));
+            return;
+        }
+
+        // Node/Next-projekt: package.json markerer roden -> registrér og stop her.
+        if (File.Exists(Path.Combine(dir, "package.json")))
+        {
+            found.Add((dir, IsNextProject(dir) ? ProjectType.Next : ProjectType.Node));
+            return;
+        }
+
+        // C#-projekt: .sln eller .csproj direkte i mappen. Vi stopper IKKE her,
+        // så en evt. web-frontend nede i en monorepo stadig kan opdages.
+        // Indlejrede .csproj (under en .sln) fjernes bagefter af CollapseProjectRoots.
+        bool hasSln = false, hasCsproj = false;
+        try { hasSln = Directory.GetFiles(dir, "*.sln").Length > 0; } catch { }
+        try { hasCsproj = Directory.GetFiles(dir, "*.csproj").Length > 0; } catch { }
+        if (hasSln || hasCsproj)
+            found.Add((dir, ProjectType.CSharp));
+
+        if (depth >= maxDepth) return;
+
+        string[] subs;
+        try { subs = Directory.GetDirectories(dir); }
+        catch { return; }
+
+        foreach (var sub in subs)
+            DiscoverProjectRootsInternal(sub, depth + 1, maxDepth, found);
+    }
+
+    // Fjern dubletter og indlejrede rødder af SAMME type (fx .csproj under en .sln).
+    // Rødder af forskellig type bevares (fuld-stack: C# + web side om side).
+    private static List<(string Root, ProjectType Type)> CollapseProjectRoots(
+        List<(string Root, ProjectType Type)> roots)
+    {
+        var norm = roots
+            .Select(r => (Root: Path.GetFullPath(r.Root), r.Type))
+            .GroupBy(r => r.Root, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+
+        var result = new List<(string, ProjectType)>();
+        foreach (var r in norm)
+        {
+            bool hasSameTypeAncestor = norm.Any(o =>
+                o.Type == r.Type &&
+                !o.Root.Equals(r.Root, StringComparison.OrdinalIgnoreCase) &&
+                IsUnder(o.Root, r.Root));
+
+            if (!hasSameTypeAncestor)
+                result.Add(r);
+        }
+        return result;
+    }
+
+    private static bool IsNextProject(string dir)
+        => File.Exists(Path.Combine(dir, "next.config.js"))
+        || File.Exists(Path.Combine(dir, "next.config.mjs"))
+        || File.Exists(Path.Combine(dir, "next.config.ts"))
+        || File.Exists(Path.Combine(dir, "next.config.cjs"));
 
     private static List<string> FindMarkerFiles(string root, string markerFileName, int maxDepth)
     {
@@ -422,14 +550,9 @@ internal class Program
 
         if (File.Exists(Path.Combine(root, "package.json")))
         {
-            if (File.Exists(Path.Combine(root, "next.config.js")) ||
-                File.Exists(Path.Combine(root, "next.config.mjs")) ||
-                File.Exists(Path.Combine(root, "next.config.ts")) ||
-                Directory.Exists(Path.Combine(root, "app")) ||
-                Directory.Exists(Path.Combine(root, "pages")))
-                return ProjectType.Next;
-
-            return ProjectType.Node;
+            // Kun Next hvis der findes en next.config.* — en blot 'app/'-mappe
+            // bruges også af React Router 7 og Remix, så den er ikke nok.
+            return IsNextProject(root) ? ProjectType.Next : ProjectType.Node;
         }
 
         if (HasAnyFile(root, "*.sln", searchDepth: 2) || HasAnyFile(root, "*.csproj", searchDepth: 2))
