@@ -2,8 +2,8 @@
   "profiles": {
     "cliCode2Web": {
       "commandName": "Project",
-      "commandLineArgs": "--class=h3k25",
-      "workingDirectory": "C:\\Users\\mje\\Dropbox\\studsw\\h3k25"
+      "commandLineArgs": "--class=h2k25",
+      "workingDirectory": "C:\\Users\\mje\\source\\stud\\h2k25"
     }
   }
 }
