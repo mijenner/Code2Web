@@ -1,0 +1,14 @@
+﻿# Code2Web reference: MauiMultiProjectApp.WinUI
+# genereret 2026-05-20 22:17
+schema;4
+name;MauiMultiProjectApp.WinUI
+type;csharp
+# multiprojekt: tokeniseret på fælles navne-basis
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;App.xaml
+t;App.xaml.cs
+t;Assets/AboutWinUIAssets.txt
+t;Assets/Images/AboutWinUIImages.txt
+t;MauiProgram.cs
+t;{PROJECT}.WinUI.csproj

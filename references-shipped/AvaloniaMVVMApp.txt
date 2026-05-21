@@ -1,0 +1,16 @@
+﻿# Code2Web reference: AvaloniaMVVMApp
+# genereret 2026-05-20 22:17
+schema;4
+name;AvaloniaMVVMApp
+type;csharp
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;App.axaml
+t;App.axaml.cs
+t;Program.cs
+t;ViewLocator.cs
+t;ViewModels/MainWindowViewModel.cs
+t;ViewModels/ViewModelBase.cs
+t;Views/MainWindow.axaml
+t;Views/MainWindow.axaml.cs
+t;{PROJECT}.csproj

@@ -1,0 +1,11 @@
+﻿# Code2Web reference: AspNetCoreWebAPI
+# genereret 2026-05-20 22:17
+schema;4
+name;AspNetCoreWebAPI
+type;csharp
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;Controllers/WeatherForecastController.cs
+t;Program.cs
+t;WeatherForecast.cs
+t;{PROJECT}.csproj

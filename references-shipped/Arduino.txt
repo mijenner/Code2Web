@@ -1,0 +1,8 @@
+﻿# Code2Web reference: Arduino
+# genereret 2026-05-20 22:17
+schema;4
+name;Arduino
+type;arduino
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;{PROJECT}.ino

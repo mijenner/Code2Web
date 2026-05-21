@@ -1,0 +1,12 @@
+﻿# Code2Web reference: AvaloniaCrossApp.Browser
+# genereret 2026-05-20 22:17
+schema;4
+name;AvaloniaCrossApp.Browser
+type;csharp
+# multiprojekt: tokeniseret på fælles navne-basis
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;Program.cs
+t;Properties/AssemblyInfo.cs
+t;wwwroot/index.html
+t;{PROJECT}.Browser.csproj

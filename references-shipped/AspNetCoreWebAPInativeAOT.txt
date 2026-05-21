@@ -1,0 +1,9 @@
+﻿# Code2Web reference: AspNetCoreWebAPInativeAOT
+# genereret 2026-05-20 22:17
+schema;4
+name;AspNetCoreWebAPInativeAOT
+type;csharp
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;Program.cs
+t;{PROJECT}.csproj

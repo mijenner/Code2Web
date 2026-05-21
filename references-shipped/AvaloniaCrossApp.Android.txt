@@ -1,0 +1,19 @@
+﻿# Code2Web reference: AvaloniaCrossApp.Android
+# genereret 2026-05-20 22:17
+schema;4
+name;AvaloniaCrossApp.Android
+type;csharp
+# multiprojekt: tokeniseret på fælles navne-basis
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;MainActivity.cs
+t;Properties/AndroidManifest.xml
+t;Resources/AboutResources.txt
+t;Resources/drawable-night-v31/avalonia_anim.xml
+t;Resources/drawable-v31/avalonia_anim.xml
+t;Resources/drawable/splash_screen.xml
+t;Resources/values-night/colors.xml
+t;Resources/values-v31/styles.xml
+t;Resources/values/colors.xml
+t;Resources/values/styles.xml
+t;{PROJECT}.Android.csproj

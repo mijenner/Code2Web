@@ -1,0 +1,32 @@
+# code2web-mapping  -  rediger hoejre kolonne; flere linjer med samme navn flettes
+# projekt-sti (relativ til udtraeks-mappen) ; reference-navn
+
+arduinosketch                      ; Arduino 
+AvaloniaApp1/AvaloniaApp1          ; AvaloniaApp
+AvaloniaApp1/AvaloniaMVVMApp1      ; AvaloniaMVVMApp 
+AvaloniaApp1/AvaloniaCrossApp1/AvaloniaCrossApp1                      ; AvaloniaCrossApp
+AvaloniaApp1/AvaloniaCrossApp1/AvaloniaCrossApp1.Android              ; AvaloniaCrossApp.Android
+AvaloniaApp1/AvaloniaCrossApp1/AvaloniaCrossApp1.Browser              ; AvaloniaCrossApp.Browser
+AvaloniaApp1/AvaloniaCrossApp1/AvaloniaCrossApp1.Desktop              ; AvaloniaCrossApp.Desktop
+AvaloniaApp1/AvaloniaCrossApp1/AvaloniaCrossApp1.iOS                  ; AvaloniaCrossApp.iOS
+ConsoleApp1/ConsoleApp1            ; NetConsoleApp
+ConsoleApp1/ClassLibrary1          ; NetClassLibrary
+MauiApp1/MauiApp1                  ; MauiApp
+MauiApp1/MauiClassLib1             ; MauiClassLibrary 
+MauiApp1/MauiBlazorHybridApp2      ; MauiBlazorHybrid
+MauiApp1/MauiBlazorHybridAndWebApp2/MauiBlazorHybridAndWebApp2        ; MauiBlazorHybridAndWebApp
+MauiApp1/MauiBlazorHybridAndWebApp2/MauiBlazorHybridAndWebApp2.Shared ; MauiBlazorHybridAndWebApp.Shared
+MauiApp1/MauiBlazorHybridAndWebApp2/MauiBlazorHybridAndWebApp2.Web    ; MauiBlazorHybridAndWebApp.Web
+MauiApp1/MauiMultiProjectApp2/MauiMultiProjectApp2                    ; MauiMultiProjectApp
+MauiApp1/MauiMultiProjectApp2/MauiMultiProjectApp2.Droid              ; MauiMultiProjectApp.Droid
+MauiApp1/MauiMultiProjectApp2/MauiMultiProjectApp2.iOS                ; MauiMultiProjectApp.iOS
+MauiApp1/MauiMultiProjectApp2/MauiMultiProjectApp2.Mac                ; MauiMultiProjectApp.Mac
+MauiApp1/MauiMultiProjectApp2/MauiMultiProjectApp2.WinUI              ; MauiMultiProjectApp.WinUI
+RiderConsoleApp1/ClassLibrary1     ; NetClassLibrary
+RiderConsoleApp1/RiderConsoleApp1  ; NetConsoleApp 
+RiderConsoleApp1/RiderMauiApp1     ; MauiApp 
+RiderConsoleApp1/RiderWebAPI1      ; NETWebAPI 
+UnityUniversal2D                   ; UnityUniversal2D
+WebApp1/AspNetCoreWebAPI1          ; AspNetCoreWebAPI 
+WebApp1/AspNetCoreWebAPInativeAOT  ; AspNetCoreWebAPInativeAOT
+

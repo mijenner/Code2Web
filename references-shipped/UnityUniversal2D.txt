@@ -1,0 +1,10 @@
+﻿# Code2Web reference: UnityUniversal2D
+# genereret 2026-05-20 22:17
+schema;4
+name;UnityUniversal2D
+type;unity
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;Packages/manifest.json
+t;Packages/packages-lock.json
+t;ProjectSettings/ProjectVersion.txt

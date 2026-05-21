@@ -1,0 +1,33 @@
+﻿# Code2Web reference: MauiBlazorHybrid
+# genereret 2026-05-20 22:17
+schema;4
+name;MauiBlazorHybrid
+type;csharp
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;App.xaml
+t;App.xaml.cs
+t;Components/Layout/MainLayout.razor
+t;Components/Layout/NavMenu.razor
+t;Components/Pages/Counter.razor
+t;Components/Pages/Home.razor
+t;Components/Pages/NotFound.razor
+t;Components/Pages/Weather.razor
+t;Components/Routes.razor
+t;Components/_Imports.razor
+t;MainPage.xaml
+t;MainPage.xaml.cs
+t;MauiProgram.cs
+t;Platforms/Android/AndroidManifest.xml
+t;Platforms/Android/MainActivity.cs
+t;Platforms/Android/MainApplication.cs
+t;Platforms/Android/Resources/values/colors.xml
+t;Platforms/iOS/AppDelegate.cs
+t;Platforms/iOS/Program.cs
+t;Platforms/MacCatalyst/AppDelegate.cs
+t;Platforms/MacCatalyst/Program.cs
+t;Platforms/Windows/App.xaml
+t;Platforms/Windows/App.xaml.cs
+t;Resources/Raw/AboutAssets.txt
+t;wwwroot/index.html
+t;{PROJECT}.csproj

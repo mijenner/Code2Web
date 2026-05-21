@@ -1,0 +1,19 @@
+﻿# Code2Web reference: MauiMultiProjectApp.Droid
+# genereret 2026-05-20 22:17
+schema;4
+name;MauiMultiProjectApp.Droid
+type;csharp
+# multiprojekt: tokeniseret på fælles navne-basis
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;AndroidManifest.xml
+t;Assets/AboutAndroidAssets.txt
+t;MainActivity.cs
+t;MainApplication.cs
+t;MauiProgram.cs
+t;Resources/AboutAndroidResources.txt
+t;Resources/mipmap-anydpi-v26/appicon.xml
+t;Resources/mipmap-anydpi-v26/appicon_round.xml
+t;Resources/values/colors.xml
+t;Resources/values/strings.xml
+t;{PROJECT}.Droid.csproj

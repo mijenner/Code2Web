@@ -1,0 +1,13 @@
+﻿# Code2Web reference: MauiMultiProjectApp.iOS
+# genereret 2026-05-20 22:17
+schema;4
+name;MauiMultiProjectApp.iOS
+type;csharp
+# multiprojekt: tokeniseret på fælles navne-basis
+# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# {PROJECT} = elevprojektets navn
+t;AppDelegate.cs
+t;Main.cs
+t;MauiProgram.cs
+t;Resources/AboutiOSResources.txt
+t;{PROJECT}.iOS.csproj
