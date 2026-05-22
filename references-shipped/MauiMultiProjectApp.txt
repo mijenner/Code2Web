@@ -1,18 +1,18 @@
 ﻿# Code2Web reference: MauiMultiProjectApp
-# genereret 2026-05-20 22:17
+# genereret 2026-05-21 23:13
 schema;4
 name;MauiMultiProjectApp
 type;csharp
-# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# format: tag;sti   t=skabelon  i=skabelon-interessant  s=altid-bidrag
 # {PROJECT} = elevprojektets navn
-t;App.xaml
-t;App.xaml.cs
-t;AppShell.xaml
-t;AppShell.xaml.cs
-t;MainPage.xaml
-t;MainPage.xaml.cs
+i;App.xaml
+i;App.xaml.cs
+i;AppShell.xaml
+i;AppShell.xaml.cs
+s;MainPage.xaml
+s;MainPage.xaml.cs
 t;MauiProgramExtensions.cs
 t;Resources/Raw/AboutAssets.txt
 t;Resources/Styles/Colors.xaml
 t;Resources/Styles/Styles.xaml
-t;{PROJECT}.csproj
+s;{PROJECT}.csproj

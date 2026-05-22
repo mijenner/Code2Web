@@ -1,18 +1,18 @@
 ﻿# Code2Web reference: MauiBlazorHybridAndWebApp.Shared
-# genereret 2026-05-20 22:17
+# genereret 2026-05-21 23:13
 schema;4
 name;MauiBlazorHybridAndWebApp.Shared
 type;csharp
 # multiprojekt: tokeniseret på fælles navne-basis
-# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# format: tag;sti   t=skabelon  i=skabelon-interessant  s=altid-bidrag
 # {PROJECT} = elevprojektets navn
-t;Layout/MainLayout.razor
-t;Layout/NavMenu.razor
+s;Layout/MainLayout.razor
+s;Layout/NavMenu.razor
 t;Pages/Counter.razor
-t;Pages/Home.razor
+s;Pages/Home.razor
 t;Pages/NotFound.razor
 t;Pages/Weather.razor
-t;Routes.razor
-t;Services/IFormFactor.cs
+s;Routes.razor
+s;Services/IFormFactor.cs
 t;_Imports.razor
-t;{PROJECT}.Shared.csproj
+s;{PROJECT}.Shared.csproj

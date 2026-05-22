@@ -1,17 +1,17 @@
 ﻿# Code2Web reference: AvaloniaCrossApp
-# genereret 2026-05-20 22:17
+# genereret 2026-05-21 23:13
 schema;4
 name;AvaloniaCrossApp
 type;csharp
-# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# format: tag;sti   t=skabelon  i=skabelon-interessant  s=altid-bidrag
 # {PROJECT} = elevprojektets navn
-t;App.axaml
-t;App.axaml.cs
-t;ViewLocator.cs
-t;ViewModels/MainViewModel.cs
-t;ViewModels/ViewModelBase.cs
-t;Views/MainView.axaml
-t;Views/MainView.axaml.cs
-t;Views/MainWindow.axaml
-t;Views/MainWindow.axaml.cs
-t;{PROJECT}.csproj
+i;App.axaml
+i;App.axaml.cs
+s;ViewLocator.cs
+s;ViewModels/MainViewModel.cs
+s;ViewModels/ViewModelBase.cs
+s;Views/MainView.axaml
+s;Views/MainView.axaml.cs
+s;Views/MainWindow.axaml
+s;Views/MainWindow.axaml.cs
+s;{PROJECT}.csproj

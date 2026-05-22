@@ -1,0 +1,23 @@
+﻿# Code2Web reference: ReactRouter
+# genereret 2026-05-21 23:13
+schema;4
+name;ReactRouter
+type;node
+# format: tag;sti   t=skabelon  i=skabelon-interessant  s=altid-bidrag
+# {PROJECT} = elevprojektets navn
+t;.react-router/types/+future.ts
+t;.react-router/types/+routes.ts
+t;.react-router/types/+server-build.d.ts
+t;.react-router/types/app/+types/root.ts
+t;.react-router/types/app/routes/+types/home.ts
+t;app/app.css
+t;app/root.tsx
+s;app/routes.ts
+s;app/routes/home.tsx
+t;app/welcome/welcome.tsx
+t;package-lock.json
+t;package.json
+i;react-router.config.ts
+i;README.md
+i;tsconfig.json
+i;vite.config.ts

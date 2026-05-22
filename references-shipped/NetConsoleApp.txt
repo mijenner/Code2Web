@@ -1,10 +1,10 @@
 ﻿# Code2Web reference: NetConsoleApp
-# genereret 2026-05-20 22:17
+# genereret 2026-05-21 23:13
 schema;4
 name;NetConsoleApp
 type;csharp
 # flettet fra: ConsoleApp1/ConsoleApp1 + RiderConsoleApp1/RiderConsoleApp1
-# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# format: tag;sti   t=skabelon  i=skabelon-interessant  s=altid-bidrag
 # {PROJECT} = elevprojektets navn
-t;Program.cs
-t;{PROJECT}.csproj
+s;Program.cs
+s;{PROJECT}.csproj

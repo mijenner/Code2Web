@@ -1,13 +1,13 @@
 ﻿# Code2Web reference: AvaloniaApp
-# genereret 2026-05-20 22:17
+# genereret 2026-05-21 23:13
 schema;4
 name;AvaloniaApp
 type;csharp
-# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)
+# format: tag;sti   t=skabelon  i=skabelon-interessant  s=altid-bidrag
 # {PROJECT} = elevprojektets navn
-t;App.axaml
-t;App.axaml.cs
-t;MainWindow.axaml
-t;MainWindow.axaml.cs
-t;Program.cs
-t;{PROJECT}.csproj
+i;App.axaml
+i;App.axaml.cs
+s;MainWindow.axaml
+s;MainWindow.axaml.cs
+i;Program.cs
+s;{PROJECT}.csproj
