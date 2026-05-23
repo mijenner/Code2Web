@@ -133,8 +133,12 @@ internal class Program
             HelpText = "Prerun-tilstand: detektér projekter, klassificér mod referencer og skriv code2web-plan.txt pr. produkt.")]
         public bool Prerun { get; set; }
 
+        [Option("create-mapping", Required = false,
+            HelpText = "Mapping-tilstand: scan skabelon-mappen og skriv code2web-mapping.txt med forslag til reference-navne. Brug --overwrite for at genskabe.")]
+        public bool CreateMapping { get; set; }
+
         [Option("overwrite", Required = false,
-            HelpText = "Sammen med --prerun: genskab plan-filer fra bunden (ellers flettes nye filer additivt ind).")]
+            HelpText = "Sammen med --prerun eller --create-mapping: genskab fra bunden (ellers flettes additivt).")]
         public bool Overwrite { get; set; }
 
         [Option('d', "directory", Required = false,
@@ -223,14 +227,18 @@ internal class Program
     // -----------------------------
     private static int RunWithOptions(Options options)
     {
+        // Mapping-tilstand: scan skabeloner og skriv code2web-mapping.txt.
+        if (options.CreateMapping)
+            return RunCreateMapping(options);
+
         // Reference-tilstand: udtræk skabelon-referencer og afslut.
         if (options.MakeReference)
             return RunReferenceExtraction(options);
 
-        // --overwrite giver kun mening sammen med --prerun.
-        if (options.Overwrite && !options.Prerun)
+        // --overwrite giver kun mening sammen med --prerun eller --create-mapping.
+        if (options.Overwrite && !options.Prerun && !options.CreateMapping)
         {
-            Console.Error.WriteLine("❌ --overwrite kan kun bruges sammen med --prerun.");
+            Console.Error.WriteLine("❌ --overwrite kan kun bruges sammen med --prerun eller --create-mapping.");
             return 1;
         }
 
@@ -241,7 +249,7 @@ internal class Program
         // Normal kørsel kræver --class.
         if (string.IsNullOrWhiteSpace(options.ClassName))
         {
-            Console.Error.WriteLine("❌ --class er påkrævet (medmindre du kører --make-reference).");
+            Console.Error.WriteLine("❌ --class er påkrævet (medmindre du kører --make-reference, --create-mapping eller --prerun).");
             return 1;
         }
 
@@ -546,16 +554,136 @@ internal class Program
         || File.Exists(Path.Combine(dir, "next.config.cjs"));
 
     // =================================================================
+    //  Skabelon-bibliotek og reference-pipeline
+    // -----------------------------------------------------------------
+    //  Konstanter og pipeline-trin der bygger reference-biblioteket fra
+    //  skabelon-mappen: --create-mapping ↦ --make-reference.
+    // =================================================================
+    private const string ProjectToken = "{PROJECT}";
+    private const string MappingFileName = "code2web-mapping.txt";
+
+    // =================================================================
+    //  Create mapping  (--create-mapping)
+    // -----------------------------------------------------------------
+    //  Scanner skabelon-mappen (--directory) for projekter og skriver en
+    //  code2web-mapping.txt med ét forslag pr. projekt. Default: additiv
+    //  fletning - nye projekter føjes til, eksisterende linjer røres ikke.
+    //  Med --overwrite: filen genskabes fra bunden, alle navne nulstilles
+    //  til forslag (mappenavn uden efterstillede cifre).
+    // =================================================================
+    private static int RunCreateMapping(Options options)
+    {
+        string inputDir = options.BaseDirectory ?? Directory.GetCurrentDirectory();
+        if (!Directory.Exists(inputDir))
+        {
+            Console.Error.WriteLine($"❌ Mappen findes ikke: {inputDir}");
+            return 1;
+        }
+
+        string mappingPath = Path.Combine(inputDir, MappingFileName);
+
+        if (!options.Quiet)
+        {
+            Console.WriteLine("Create-mapping-tilstand");
+            Console.WriteLine($"Skabelon-mappe : {inputDir}");
+            Console.WriteLine($"Mapping-fil    : {mappingPath}");
+            Console.WriteLine($"Tilstand       : {(options.Overwrite ? "overwrite (genskab)" : "additiv fletning")}");
+            Console.WriteLine();
+        }
+
+        var projects = DiscoverProjectsForReference(inputDir);
+        if (projects.Count == 0)
+        {
+            Console.Error.WriteLine("⚠️ Ingen projekter fundet under skabelon-mappen.");
+            return 1;
+        }
+
+        // Læs eksisterende mapping medmindre vi overskriver.
+        Dictionary<string, string> existing = new(StringComparer.OrdinalIgnoreCase);
+        if (!options.Overwrite)
+            existing = ReadMappingFile(mappingPath);
+
+        // Byg den endelige liste: alle projekter, eksisterende navne bevares.
+        var entries = new List<(string Key, string RefName, bool IsNew)>();
+        foreach (var (root, _) in projects)
+        {
+            var key = Path.GetRelativePath(inputDir, root).Replace(Path.DirectorySeparatorChar, '/');
+            if (existing.TryGetValue(key, out var existingName) && !string.IsNullOrWhiteSpace(existingName))
+                entries.Add((key, existingName, false));
+            else
+                entries.Add((key, SuggestReferenceName(Path.GetFileName(root)), true));
+        }
+
+        // Sortér: grupper med flere projekter (potentielle fletninger) først,
+        // alfabetisk efter reference-navn. Inden for hver gruppe: alfabetisk
+        // efter sti. Singletons kommer derefter, også alfabetisk efter sti.
+        var groups = entries
+            .GroupBy(e => e.RefName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var mergeGroups = groups
+            .Where(g => g.Count() > 1)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var singletons = groups
+            .Where(g => g.Count() == 1)
+            .SelectMany(g => g)
+            .OrderBy(e => e.Key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        int pad = entries.Max(e => e.Key.Length);
+        var sb = new StringBuilder();
+        sb.AppendLine("# code2web-mapping  -  rediger hoejre kolonne; flere linjer med samme navn flettes");
+        sb.AppendLine("# projekt-sti (relativ til skabelon-mappen) ; reference-navn");
+        sb.AppendLine();
+
+        if (mergeGroups.Count > 0)
+        {
+            sb.AppendLine("# === Kandidater til fletning (samme forslag - bekraeft eller giv forskellige navne) ===");
+            foreach (var group in mergeGroups)
+            {
+                sb.AppendLine($"# -- {group.Key} ({group.Count()} projekter) --");
+                foreach (var entry in group.OrderBy(e => e.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    var marker = entry.IsNew ? "  # NY" : "";
+                    sb.AppendLine($"{entry.Key.PadRight(pad)} ; {entry.RefName}{marker}");
+                }
+                sb.AppendLine();
+            }
+        }
+
+        if (singletons.Count > 0)
+        {
+            if (mergeGroups.Count > 0)
+                sb.AppendLine("# === Enkeltstaaende projekter ===");
+            foreach (var entry in singletons)
+            {
+                var marker = entry.IsNew ? "  # NY" : "";
+                sb.AppendLine($"{entry.Key.PadRight(pad)} ; {entry.RefName}{marker}");
+            }
+        }
+
+        File.WriteAllText(mappingPath, sb.ToString(), Encoding.UTF8);
+
+        if (!options.Quiet)
+        {
+            int newCount = entries.Count(e => e.IsNew);
+            int keptCount = entries.Count - newCount;
+            Console.WriteLine($"✅ {entries.Count} projekt(er) i mapping-filen: {keptCount} bevaret, {newCount} ny(e).");
+            Console.WriteLine($"   Åbn {Path.GetFileName(mappingPath)} og forfin reference-navnene før du kører --make-reference.");
+        }
+        return 0;
+    }
+
+    // =================================================================
     //  Reference extraction  (--make-reference)
     // -----------------------------------------------------------------
     //  Gennemgår --directory, finder hvert projekt (på .csproj-/Unity-/
     //  package.json-niveau) og skriver reference-filer: rene tokeniserede
     //  sti-lister (projektnavn erstattet med {PROJECT}). Navngivning og
-    //  fletning styres af code2web-mapping.txt i references-mappen.
+    //  fletning styres af code2web-mapping.txt i skabelon-mappen.
     // =================================================================
-    private const string ProjectToken = "{PROJECT}";
-    private const string MappingFileName = "code2web-mapping.txt";
-
     private static int RunReferenceExtraction(Options options)
     {
         string inputDir = options.BaseDirectory ?? Directory.GetCurrentDirectory();
@@ -581,7 +709,29 @@ internal class Program
         }
         Directory.CreateDirectory(outputDir);
 
-        string mappingPath = Path.Combine(outputDir, MappingFileName);
+        // Mapping-filen hører til SKABELON-mappen (inputDir), ikke references-
+        // mappen (outputDir). Den oversætter projekt-stier i skabelon-mappen til
+        // reference-navne — den er ren undervisning-tooling og bør ikke ligge
+        // sammen med output, da publish derved kunne komme til at sprede den.
+        string mappingPath = Path.Combine(inputDir, MappingFileName);
+
+        // Bagudkompatibilitet: hvis mapping-filen ligger i references-mappen
+        // fra en tidligere version, flyt den automatisk over én gang.
+        string legacyMappingPath = Path.Combine(outputDir, MappingFileName);
+        if (!File.Exists(mappingPath) && File.Exists(legacyMappingPath))
+        {
+            try
+            {
+                File.Move(legacyMappingPath, mappingPath);
+                if (!options.Quiet)
+                    Console.WriteLine($"  (flyttet code2web-mapping.txt fra {outputDir} til {inputDir})");
+            }
+            catch (Exception ex)
+            {
+                if (!options.Quiet)
+                    Console.WriteLine($"  (kunne ikke flytte gammel mapping-fil: {ex.Message})");
+            }
+        }
 
         if (!options.Quiet)
         {
@@ -684,12 +834,14 @@ internal class Program
                 sb.AppendLine($"# flettet fra: {string.Join(" + ", members.Select(m => m.Key))}");
             if (anyMultiProject)
                 sb.AppendLine("# multiprojekt: tokeniseret på fælles navne-basis");
-            sb.AppendLine("# format: tag;sti   tag = t (skabelon) eller i (skabelon, interessant)");
+            sb.AppendLine("# format: tag;sti   t=skabelon  i=skabelon-interessant  s=altid-bidrag");
             sb.AppendLine("# {PROJECT} = elevprojektets navn");
             foreach (var p in pathSet)
             {
-                // Default 't'; behold 'i' hvis den var sat i hånden tidligere.
-                var tag = existingTags.TryGetValue(p, out var t) && t == 'i' ? 'i' : 't';
+                // Default 't'; behold håndsatte 'i'- og 's'-tags ved gen-kørsel.
+                var tag = 't';
+                if (existingTags.TryGetValue(p, out var t) && (t == 'i' || t == 's'))
+                    tag = t;
                 sb.AppendLine($"{tag};{p}");
             }
 
@@ -829,13 +981,17 @@ internal class Program
             refDir = Path.Combine(docs, "Code2Web", "references");
         }
 
-        var references = LoadReferences(refDir);
+        var references = LoadReferences(refDir, out int localRefs, out int shippedRefs);
 
         if (!options.Quiet)
         {
+            var shipped = GetShippedReferencesDir();
             Console.WriteLine("Prerun-tilstand");
             Console.WriteLine($"Elev-rod   : {baseDir}");
-            Console.WriteLine($"Referencer : {refDir}  ({references.Count} indlæst)");
+            Console.WriteLine($"Referencer : {refDir}  ({localRefs} lokal{(localRefs == 1 ? "" : "e")})");
+            if (shipped is not null)
+                Console.WriteLine($"  + shipped: {shipped}  ({shippedRefs} brugt, øvrige overstyret af lokale)");
+            Console.WriteLine($"  i alt    : {references.Count} reference(r) indlæst");
             Console.WriteLine($"Tilstand   : {(options.Overwrite ? "overwrite (genskab)" : "additiv fletning")}");
             Console.WriteLine();
         }
@@ -860,9 +1016,17 @@ internal class Program
         foreach (var productDir in products)
         {
             var projects = FindProjectsInGroup(productDir, options, ProjectType.Auto);
-            var plan = BuildProductPlan(productDir, projects, references, options);
-
             var planPath = Path.Combine(productDir, PlanFileName);
+
+            // Læs altid 'reference='-valg fra eksisterende plan (også uden
+            // --overwrite), så vi ikke gen-prompter for projekter brugeren
+            // allerede har taget stilling til.
+            Dictionary<string, string>? existingRefChoices = null;
+            if (File.Exists(planPath))
+                existingRefChoices = ReadPlanReferenceChoices(planPath);
+
+            var plan = BuildProductPlan(productDir, projects, references, options, existingRefChoices);
+
             WritePlanFile(planPath, plan, options.Overwrite, options);
             planCount++;
 
@@ -900,11 +1064,48 @@ internal class Program
     }
 
     // Indlæs alle reference-filer (*.txt) fra references-mappen.
-    private static Dictionary<string, Reference> LoadReferences(string refDir)
+    // Find shipped references-mappe ved siden af binæren (hvis publish lagde
+    // en med). Returnerer null hvis ingen blev shippet.
+    private static string? GetShippedReferencesDir()
+    {
+        try
+        {
+            var exeDir = AppContext.BaseDirectory;
+            if (string.IsNullOrWhiteSpace(exeDir)) return null;
+            var candidate = Path.Combine(exeDir, "references");
+            return Directory.Exists(candidate) ? candidate : null;
+        }
+        catch { return null; }
+    }
+
+    // Indlæs alle reference-filer. Lokale (i refDir) vinder over shipped (ved
+    // siden af binæren), så en bruger der laver en lokal reference med samme
+    // navn overstyrer den shippede. Tæller pr. kilde rapporteres ud.
+    private static Dictionary<string, Reference> LoadReferences(
+        string refDir, out int localCount, out int shippedCount)
     {
         var refs = new Dictionary<string, Reference>(StringComparer.OrdinalIgnoreCase);
-        if (!Directory.Exists(refDir)) return refs;
 
+        // Lokale først (vinder).
+        localCount = LoadReferencesFromDir(refDir, refs);
+
+        // Derefter shipped som fallback - kun navne der ikke allerede er indlæst.
+        var shipped = GetShippedReferencesDir();
+        shippedCount = shipped is null ? 0 : LoadReferencesFromDir(shipped, refs, skipExisting: true);
+
+        return refs;
+    }
+
+    // Bagudkompatibel overload (uden statistik) - bruges af RunPrerun.
+    private static Dictionary<string, Reference> LoadReferences(string refDir)
+        => LoadReferences(refDir, out _, out _);
+
+    private static int LoadReferencesFromDir(
+        string refDir, Dictionary<string, Reference> refs, bool skipExisting = false)
+    {
+        if (!Directory.Exists(refDir)) return 0;
+
+        int count = 0;
         foreach (var file in Directory.GetFiles(refDir, "*.txt"))
         {
             if (Path.GetFileName(file).Equals(MappingFileName, StringComparison.OrdinalIgnoreCase))
@@ -925,10 +1126,11 @@ internal class Program
                     if (line.StartsWith("schema;", StringComparison.OrdinalIgnoreCase)) continue;
 
                     // Datalinje: 'tag;sti' (nyt) eller bar sti (gammelt -> 't').
+                    // Tags: t=skabelon, i=skabelon-interessant, s=altid-bidrag.
                     char tag = 't';
                     string path = line;
                     if (line.Length > 1 && line[1] == ';' &&
-                        (char.ToLowerInvariant(line[0]) is 't' or 'i'))
+                        (char.ToLowerInvariant(line[0]) is 't' or 'i' or 's'))
                     {
                         tag = char.ToLowerInvariant(line[0]);
                         path = line.Substring(2).Trim();
@@ -937,17 +1139,22 @@ internal class Program
                         r.Paths[path] = tag;
                 }
                 if (r.Paths.Count > 0)
+                {
+                    if (skipExisting && refs.ContainsKey(r.Name)) continue;
                     refs[r.Name] = r;
+                    count++;
+                }
             }
             catch { /* korrupt reference springes over */ }
         }
-        return refs;
+        return count;
     }
 
     // Byg planen for ét produkt: klassificér hvert projekts filer.
     private static List<PlanProject> BuildProductPlan(
         string productDir, List<ProjectSpec> projects,
-        Dictionary<string, Reference> references, Options options)
+        Dictionary<string, Reference> references, Options options,
+        Dictionary<string, string>? existingReferenceChoices = null)
     {
         var result = new List<PlanProject>();
 
@@ -955,9 +1162,67 @@ internal class Program
         {
             var pp = new PlanProject { Name = spec.ProjectName, Type = spec.Type };
 
-            // Vælg reference: marker kan navngive den eksplicit, ellers gæt ud fra type+overlap.
-            var reference = ResolveReference(spec, references, options);
+            // Vælg reference i prioritetsorden:
+            //   1. Brugerens valg fra eksisterende plan (også uden --overwrite,
+            //      så vi ikke spørger om det samme igen).
+            //   2. Markerfil-navn (code2web.json med 'name').
+            //   3. Auto-pick hvis der er en klar vinder.
+            //   4. Interaktiv prompt hvis usikkert og vi har en terminal.
+            //   5. Auto-pick (eller intet) som sidste udvej.
+            Reference? reference = null;
+            bool fromExistingPlan = false;
+            bool fromInteractive = false;
+
+            if (existingReferenceChoices is not null
+                && existingReferenceChoices.TryGetValue(spec.ProjectName, out var chosen)
+                && !string.IsNullOrWhiteSpace(chosen)
+                && references.TryGetValue(chosen, out var planRef))
+            {
+                reference = planRef;
+                fromExistingPlan = true;
+            }
+
+            if (reference is null && spec.Marker is not null
+                && !string.IsNullOrWhiteSpace(spec.Marker.Name)
+                && references.TryGetValue(spec.Marker.Name!, out var fromMarker))
+            {
+                reference = fromMarker;
+            }
+
+            if (reference is null)
+            {
+                var ranked = RankReferenceCandidates(spec, references, options);
+                var autoPick = PickAutoReference(ranked);
+
+                if (IsClearWinner(ranked))
+                {
+                    reference = autoPick;
+                }
+                else if (ranked.Count > 0 && ranked[0].Score >= MinPromptScore && CanPromptInteractively())
+                {
+                    var picked = PromptForReference(spec, ranked, autoPick);
+                    if (picked is not null)
+                    {
+                        reference = picked;
+                        fromInteractive = true;
+                    }
+                    // null = brugeren valgte 'spring over' -> reference forbliver null
+                }
+                else
+                {
+                    reference = autoPick;
+                }
+            }
+
             pp.ReferenceName = reference?.Name ?? "";
+
+            if (!options.Quiet && reference is not null)
+            {
+                if (fromExistingPlan)
+                    Console.WriteLine($"    {spec.ProjectName}: reference={reference.Name} (fra eksisterende plan)");
+                else if (fromInteractive)
+                    Console.WriteLine($"    {spec.ProjectName}: reference={reference.Name} (valgt af bruger)");
+            }
 
             // Elevprojektets faktiske filer (samme profil-handler som generering bruger).
             var files = ProfileFilesFor(spec.ProjectRoot, spec.Type, options);
@@ -979,7 +1244,7 @@ internal class Program
                         .Replace(Path.DirectorySeparatorChar, '/');
                     var tokenized = TokenizePath(relProject, token);
                     if (reference.Paths.TryGetValue(tokenized, out var refTag))
-                        tag = refTag;   // 't' eller 'i'
+                        tag = refTag;   // 't', 'i' eller 's' (sidstnævnte = "altid-bidrag")
                 }
 
                 pp.Files.Add(new PlanFileLine { Tag = tag, Path = relProduct });
@@ -1045,6 +1310,93 @@ internal class Program
         return bestScore >= 0.5 ? best : null;
     }
 
+    // ----- Interaktiv reference-prompt og scoring-helpers -----
+
+    private sealed record RankedCandidate(Reference Reference, double Score);
+
+    // Tærskler for hvornår auto-pick er trygt, vs. hvornår vi spørger.
+    private const double MinAutoScore     = 0.50;   // grænse for at auto-pick'e overhovedet
+    private const double ClearWinnerScore = 0.70;   // top skal være mindst dette for "klar vinder"
+    private const double ClearWinnerGap   = 0.15;   // gap til runner-up for "klar vinder"
+    private const double MinPromptScore   = 0.20;   // under dette spørger vi heller ikke
+
+    // Score-rangér alle referencer af samme type som projektet.
+    private static List<RankedCandidate> RankReferenceCandidates(
+        ProjectSpec spec, Dictionary<string, Reference> references, Options options)
+    {
+        var candidates = references.Values.Where(r => r.Type == spec.Type).ToList();
+        if (candidates.Count == 0) return new();
+
+        var files = ProfileFilesFor(spec.ProjectRoot, spec.Type, options);
+        if (files.Count == 0) return new();
+
+        var token = Path.GetFileName(spec.ProjectRoot);
+        var projectPaths = files
+            .Select(f => TokenizePath(
+                Path.GetRelativePath(spec.ProjectRoot, f).Replace(Path.DirectorySeparatorChar, '/'),
+                token))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return candidates
+            .Select(r => new RankedCandidate(
+                r,
+                (double)r.Paths.Keys.Count(p => projectPaths.Contains(p)) / r.Paths.Count))
+            .Where(c => c.Score > 0)
+            .OrderByDescending(c => c.Score)
+            .ToList();
+    }
+
+    private static Reference? PickAutoReference(List<RankedCandidate> ranked)
+        => ranked.Count > 0 && ranked[0].Score >= MinAutoScore ? ranked[0].Reference : null;
+
+    // En klar vinder = top er højt nok OG enten alene eller med god margin.
+    private static bool IsClearWinner(List<RankedCandidate> ranked)
+    {
+        if (ranked.Count == 0) return false;
+        if (ranked[0].Score < ClearWinnerScore) return false;
+        if (ranked.Count == 1) return true;
+        return (ranked[0].Score - ranked[1].Score) >= ClearWinnerGap;
+    }
+
+    // Vi promper kun hvis stdin OG stdout begge er reelle terminaler.
+    // Ellers (CI, pipe, redirect) ville en prompt hænge processen.
+    private static bool CanPromptInteractively()
+    {
+        try { return !Console.IsInputRedirected && !Console.IsOutputRedirected; }
+        catch { return false; }
+    }
+
+    // Vis nummereret menu og læs valg. Returnerer null hvis brugeren springer over.
+    private static Reference? PromptForReference(
+        ProjectSpec spec, List<RankedCandidate> ranked, Reference? autoPick)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"  ? {spec.ProjectName} ({spec.Type.ToString().ToLowerInvariant()}) - auto-gæt usikkert:");
+
+        int maxShown = Math.Min(ranked.Count, 6);
+        for (int i = 0; i < maxShown; i++)
+        {
+            var c = ranked[i];
+            var arrow = autoPick is not null && ReferenceEquals(c.Reference, autoPick) ? "  <- auto" : "";
+            Console.WriteLine($"    [{i + 1}] {c.Reference.Name,-30}  (overlap {c.Score:P0}){arrow}");
+        }
+        Console.WriteLine("    [s] spring over (lad reference være tom)");
+
+        while (true)
+        {
+            Console.Write($"  Vælg [1-{maxShown}, s]: ");
+            var input = Console.ReadLine();
+            if (input is null) return null;  // stdin lukket
+            input = input.Trim().ToLowerInvariant();
+
+            if (input == "s") return null;
+            if (int.TryParse(input, out int n) && n >= 1 && n <= maxShown)
+                return ranked[n - 1].Reference;
+
+            Console.WriteLine($"    Ugyldigt valg. Skriv et tal mellem 1 og {maxShown}, eller 's'.");
+        }
+    }
+
     // Skriv (eller flet) plan-filen for ét produkt.
     private static void WritePlanFile(
         string planPath, List<PlanProject> plan, bool overwrite, Options options)
@@ -1104,6 +1456,43 @@ internal class Program
         }
         catch { /* korrupt plan ignoreres - alt klassificeres da forfra */ }
         return tags;
+    }
+
+    // Læs projekt-navn -> reference-navn fra eksisterende plan-fil.
+    // Bruges af --prerun --overwrite til at bevare brugerens 'reference='-rettelser.
+    private static Dictionary<string, string> ReadPlanReferenceChoices(string planPath)
+    {
+        var choices = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            foreach (var raw in File.ReadAllLines(planPath, Encoding.UTF8))
+            {
+                var line = raw.Trim();
+                if (!line.StartsWith("[projekt]", StringComparison.OrdinalIgnoreCase)) continue;
+
+                // Format: [projekt] <navn> ; reference=<ref> ; type=<type>
+                var parts = line.Split(';');
+                if (parts.Length < 2) continue;
+
+                var nameRaw = parts[0].Substring("[projekt]".Length).Trim();
+                if (nameRaw.Length == 0) continue;
+
+                string? refName = null;
+                foreach (var part in parts.Skip(1))
+                {
+                    var kv = part.Trim();
+                    if (kv.StartsWith("reference=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        refName = kv.Substring("reference=".Length).Trim();
+                        break;
+                    }
+                }
+                if (!string.IsNullOrWhiteSpace(refName))
+                    choices[nameRaw] = refName!;
+            }
+        }
+        catch { /* korrupt plan ignoreres */ }
+        return choices;
     }
 
 
@@ -1289,7 +1678,7 @@ internal class Program
                 string path = line;
 
                 var idx = line.IndexOf(';');
-                if (idx == 1 && (line[0] == 't' || line[0] == 'i' || line[0] == 'T' || line[0] == 'I'))
+                if (idx == 1 && (line[0] is 't' or 'i' or 's' or 'T' or 'I' or 'S'))
                 {
                     tag = char.ToLowerInvariant(line[0]);
                     path = line.Substring(2).Trim();
@@ -1553,12 +1942,8 @@ internal class Program
             var lang = GetLanguageClass(ext);
 
             string content;
-            try { content = File.ReadAllText(file, Encoding.UTF8); }
-            catch
-            {
-                try { content = File.ReadAllText(file); }
-                catch { continue; }
-            }
+            if (!TryReadTextWithEncodingFallback(file, out content))
+                continue;
 
             var openAttr = openByDefault ? " open" : "";
             html.AppendLine($"<details{openAttr}>");
@@ -1571,6 +1956,77 @@ internal class Program
     }
 
     // Render ressource-listen (kun navne, intet indhold) som en enkelt liste under en H3.
+    // Læs en tekstfil med encoding-detektion. Strategien er:
+    //   1) Hvis filen har en kendt BOM (UTF-8/UTF-16/UTF-32), så bruger
+    //      .NET automatisk den encoding korrekt.
+    //   2) Ellers: forsøg strikt UTF-8 (kaster fejl på ugyldige bytes -
+    //      i modsætning til Encoding.UTF8 som tavst indsætter U+FFFD).
+    //   3) Fallback til Windows-1252 hvor danske tegn fra aeldre VS-filer
+    //      paa Windows typisk er gemt - det er det der fanger 'aa' der
+    //      ellers ville vises som mojibake.
+    // Returnerer false hvis filen er helt ulaeselig (binaer, locked, osv.).
+    private static bool TryReadTextWithEncodingFallback(string path, out string content)
+    {
+        content = "";
+
+        byte[] bytes;
+        try { bytes = File.ReadAllBytes(path); }
+        catch { return false; }
+
+        // 1) BOM-detektion
+        if (HasUtf8Bom(bytes) || HasUtf16Bom(bytes) || HasUtf32Bom(bytes))
+        {
+            try
+            {
+                using var ms = new MemoryStream(bytes);
+                using var sr = new StreamReader(ms, detectEncodingFromByteOrderMarks: true);
+                content = sr.ReadToEnd();
+                return true;
+            }
+            catch { /* fald igennem til naeste forsoeg */ }
+        }
+
+        // 2) Strikt UTF-8
+        try
+        {
+            var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+            content = strictUtf8.GetString(bytes);
+            return true;
+        }
+        catch (DecoderFallbackException) { /* ikke gyldig UTF-8 - proev Windows-1252 */ }
+        catch { return false; }
+
+        // 3) Windows-1252 (skal registreres paa .NET Core+ via provider).
+        try
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var win1252 = Encoding.GetEncoding(1252);
+            content = win1252.GetString(bytes);
+            return true;
+        }
+        catch
+        {
+            // Sidste udvej: ISO-8859-1 (Latin-1) som altid er tilgaengelig.
+            try
+            {
+                content = Encoding.GetEncoding("ISO-8859-1").GetString(bytes);
+                return true;
+            }
+            catch { return false; }
+        }
+    }
+
+    private static bool HasUtf8Bom(byte[] b)
+        => b.Length >= 3 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF;
+
+    private static bool HasUtf16Bom(byte[] b)
+        => b.Length >= 2 && ((b[0] == 0xFF && b[1] == 0xFE) || (b[0] == 0xFE && b[1] == 0xFF));
+
+    private static bool HasUtf32Bom(byte[] b)
+        => b.Length >= 4 &&
+           ((b[0] == 0xFF && b[1] == 0xFE && b[2] == 0x00 && b[3] == 0x00) ||
+            (b[0] == 0x00 && b[1] == 0x00 && b[2] == 0xFE && b[3] == 0xFF));
+
     private static void WriteResourcesBlock(
         StringBuilder html, string projectRoot, List<string> resources, string sectionId)
     {

@@ -9,8 +9,6 @@ REM  Forventer at du har koert sync-references.cmd foerst, saa
 REM  references-shipped\ er opdateret fra dine lokale referencer.
 REM
 REM  Brug : publish-win.cmd  [Runtime]  [Configuration]
-REM    fx : publish-win.cmd
-REM    fx : publish-win.cmd win-x64 Release
 REM ------------------------------------------------------------------
 
 setlocal enabledelayedexpansion
@@ -25,23 +23,24 @@ REM Mappen hvor dette script ligger (repo-roden).
 set "SCRIPT_DIR=%~dp0"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 
-REM Find .csproj (helst cliCode2Web.csproj).
+REM Find .csproj eksplicit: foerst ved siden af scriptet, derefter i
+REM underprojektmappen 'cliCode2Web\'. Saa kalder vi 'dotnet publish'
+REM med projektstien - aldrig solution-niveau - hvilket undgaar baade
+REM '--output paa solution'-advarslen og evt. solution-fald-tilbage.
 set "PROJECT="
-for /r "%SCRIPT_DIR%" %%F in (cliCode2Web.csproj) do (
-    if not defined PROJECT set "PROJECT=%%F"
-)
+if exist "%SCRIPT_DIR%\cliCode2Web.csproj" set "PROJECT=%SCRIPT_DIR%\cliCode2Web.csproj"
+if not defined PROJECT if exist "%SCRIPT_DIR%\cliCode2Web\cliCode2Web.csproj" set "PROJECT=%SCRIPT_DIR%\cliCode2Web\cliCode2Web.csproj"
+
 if not defined PROJECT (
-    for /r "%SCRIPT_DIR%" %%F in (*.csproj) do (
-        if not defined PROJECT set "PROJECT=%%F"
-    )
-)
-if not defined PROJECT (
-    echo FEJL: Fandt ingen .csproj-filer under %SCRIPT_DIR%
+    echo FEJL: Kunne ikke finde cliCode2Web.csproj
+    echo   ledte i: %SCRIPT_DIR%
+    echo   og i  : %SCRIPT_DIR%\cliCode2Web
     exit /b 1
 )
 
 set "DEST=%USERPROFILE%\cli"
 
+echo Script dir   : %SCRIPT_DIR%
 echo Project      : %PROJECT%
 echo Runtime      : %RUNTIME%
 echo Configuration: %CONFIG%
@@ -57,9 +56,10 @@ dotnet publish "%PROJECT%" ^
     --self-contained true ^
     -o "%DEST%"
 
-if errorlevel 1 (
-    echo FEJL: dotnet publish fejlede med exit code %errorlevel%
-    exit /b %errorlevel%
+set "PUBLISH_RC=%errorlevel%"
+if not "%PUBLISH_RC%"=="0" (
+    echo FEJL: dotnet publish fejlede med exit code %PUBLISH_RC%
+    exit /b %PUBLISH_RC%
 )
 
 REM Shipped references: kopier fra repoets references-shipped\ ind
@@ -81,7 +81,7 @@ if exist "%SHIPPED_SRC%" (
         copy /y "%%F" "!SHIPPED_DST!\" >nul
         set /a COUNT+=1
     )
-    echo   (!COUNT! fil(er) kopieret^)
+    echo   !COUNT! reference-fil^(er^) kopieret.
 ) else (
     echo.
     echo INFO: references-shipped\ blev ikke fundet i repoet.
